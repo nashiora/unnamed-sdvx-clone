@@ -42,7 +42,7 @@ static void Spin(float time, float &roll, float &bgAngle, float dir)
 static Transform GetOriginTransform(float pitch, float offs, float roll)
 {
 	auto origin = Transform::Rotation({ 0, 0, roll });
-	auto anchor = Transform::Translation({ offs, -0.9f, 0 })
+	auto anchor = Transform::Translation({ offs, -0.725f, 0 })
 		* Transform::Rotation({ 1.5f, 0, 0 });
 	auto contnr = Transform::Translation({ 0, 0, -0.9f })
 		* Transform::Rotation({ -90 + pitch, 0, 0, });
@@ -272,7 +272,8 @@ float Camera::GetVisualRoll() const
 
 float Camera::GetHorizonHeight()
 {
-	return (0.5 + (-(m_actualCameraPitch + pLanePitch * pitchUnit) / fovs[g_aspectRatio > 1.0f ? 0 : 1])) * m_rsLast.viewportSize.y;
+	float angle = fmodf(m_actualCameraPitch + pLanePitch * pitchUnit, 360.0f);
+	return (0.5 + (-angle / fovs[g_aspectRatio > 1.0f ? 0 : 1])) * m_rsLast.viewportSize.y;
 }
 
 Vector2i Camera::GetScreenCenter()

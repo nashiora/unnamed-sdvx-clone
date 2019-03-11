@@ -64,7 +64,7 @@ public:
 	float pLaneTilt = 0.0f;
 	bool pLaneTiltEnabled = false;
 
-	float pitchUnit = 7.0f;
+	float pitchUnit = 180 / 12.0f;
 
 	float cameraShakeX = 0.0f;
 	float cameraShakeY = 0.4f;
