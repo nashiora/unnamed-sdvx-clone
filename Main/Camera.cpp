@@ -65,7 +65,11 @@ void Camera::Tick(float deltaTime, class BeatmapPlayback& playback)
 
 	const TimingPoint& currentTimingPoint = playback.GetCurrentTimingPoint();
 
-	LerpTo(m_laserRoll, m_targetRoll, m_targetRoll != 0.0f ? 8 : 3);
+	// always lerp laser roll despite having lane tilt enabled
+	LerpTo(m_laserRoll, m_targetLaserRoll, m_targetLaserRoll != 0.0f ? 8 : 3);
+	if (pLaneTiltEnabled)
+		m_visualRoll = pLaneTilt;
+	else m_visualRoll = m_laserRoll;
 
 	m_spinProgress = (float)(playback.GetLastTime() - m_spinStart) / m_spinDuration;
 	// Calculate camera spin
@@ -98,13 +102,14 @@ void Camera::Tick(float deltaTime, class BeatmapPlayback& playback)
 		m_spinProgress = 0.0f;
 	}
 
-	m_totalRoll = pLaneBaseRoll + m_spinRoll + m_laserRoll;
-	m_totalOffset = pLaneOffset / 2.0f + m_spinBounceOffset;
+	m_totalRoll = m_spinRoll + m_visualRoll;
+	// In KSM, side zoom of 116 is 5/12 the highway width of translation
+	m_totalOffset = ((pLaneOffset + m_spinBounceOffset) * (5 * 100) / (6 * 116)) / 2.0f;
 
 	if (!rollKeep)
 	{
 		m_targetRollSet = false;
-		m_targetRoll = 0.0f;
+		m_targetLaserRoll = 0.0f;
 	}
 
 	// Update camera shake effects
@@ -141,7 +146,7 @@ void Camera::Tick(float deltaTime, class BeatmapPlayback& playback)
 
 	track->trackOrigin = GetZoomedTransform(worldNormal);
 
-	critOrigin = GetZoomedTransform(GetOriginTransform(lanePitch, m_totalOffset, m_laserRoll * 360.0f + sin(m_spinRoll * Math::pi * 2) * 20));
+	critOrigin = GetZoomedTransform(GetOriginTransform(lanePitch, m_totalOffset, m_visualRoll * 360.0f + sin(m_spinRoll * Math::pi * 2) * 20));
 }
 void Camera::AddCameraShake(CameraShake cameraShake)
 {
@@ -207,19 +212,19 @@ void Camera::SetTargetRoll(float target)
 	float actualTarget = target * m_rollIntensity;
 	if(!rollKeep)
 	{
-		m_targetRoll = actualTarget;
+		m_targetLaserRoll = actualTarget;
 		m_targetRollSet = true;
 	}
 	else
 	{
-		if (m_targetRoll == 0.0f || Math::Sign(m_targetRoll) == Math::Sign(actualTarget))
+		if (m_targetLaserRoll == 0.0f || Math::Sign(m_targetLaserRoll) == Math::Sign(actualTarget))
 		{
-			if (m_targetRoll == 0)
-				m_targetRoll = actualTarget;
-			if (m_targetRoll < 0 && actualTarget < m_targetRoll)
-				m_targetRoll = actualTarget;
-			else if (m_targetRoll > 0 && actualTarget > m_targetRoll)
-				m_targetRoll = actualTarget;
+			if (m_targetLaserRoll == 0)
+				m_targetLaserRoll = actualTarget;
+			if (m_targetLaserRoll < 0 && actualTarget < m_targetLaserRoll)
+				m_targetLaserRoll = actualTarget;
+			else if (m_targetLaserRoll > 0 && actualTarget > m_targetLaserRoll)
+				m_targetLaserRoll = actualTarget;
 		}
 		m_targetRollSet = true;
 	}
@@ -255,14 +260,14 @@ void Camera::SetLasersActive(bool lasersActive)
 	m_lasersActive = lasersActive;
 }
 
-float Camera::GetRoll() const
-{
-	return m_totalRoll;
-}
-
 float Camera::GetLaserRoll() const
 {
 	return m_laserRoll;
+}
+
+float Camera::GetVisualRoll() const
+{
+	return m_visualRoll;
 }
 
 float Camera::GetHorizonHeight()

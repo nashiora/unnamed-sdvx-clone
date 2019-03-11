@@ -529,7 +529,8 @@ public:
 		m_camera.pLaneZoom = m_playback.GetZoom(0);
 		m_camera.pLanePitch = m_playback.GetZoom(1);
 		m_camera.pLaneOffset = m_playback.GetZoom(2);
-		m_camera.pLaneBaseRoll = m_playback.GetZoom(3);
+		m_camera.pLaneTilt = m_playback.GetZoom(3);
+		m_camera.pLaneTiltEnabled = false;
 
 		for(uint32 i = 0; i < 2; i++)
 		{
@@ -597,7 +598,8 @@ public:
 		m_camera.pLaneZoom = m_playback.GetZoom(0);
 		m_camera.pLanePitch = m_playback.GetZoom(1);
 		m_camera.pLaneOffset = m_playback.GetZoom(2);
-		m_camera.pLaneBaseRoll = m_playback.GetZoom(3);
+		m_camera.pLaneTilt = m_playback.GetZoom(3);
+		m_camera.pLaneTiltEnabled = false; // will be set based on lane tilt events
 		m_camera.track = m_track;
 		m_camera.Tick(deltaTime,m_playback);
 		m_track->Tick(m_playback, deltaTime);
@@ -902,7 +904,8 @@ public:
 		m_camera.pLaneZoom = m_playback.GetZoom(0);
 		m_camera.pLanePitch = m_playback.GetZoom(1);
 		m_camera.pLaneOffset = m_playback.GetZoom(2);
-		m_camera.pLaneBaseRoll = m_playback.GetZoom(3);
+		m_camera.pLaneTilt = m_playback.GetZoom(3);
+		m_camera.pLaneTiltEnabled = false;
 
         // If c-mod is used
 		if (m_usecMod)
@@ -1308,7 +1311,7 @@ public:
 		textPos.y += RenderText(Utility::Sprintf("Health Gauge: %f", m_scoring.currentGauge), textPos).y;
 
 		textPos.y += RenderText(Utility::Sprintf("Roll: %f(x%f) %s",
-			m_camera.GetRoll(), m_rollIntensity, m_camera.rollKeep ? "[Keep]" : ""), textPos).y;
+			m_camera.GetVisualRoll(), m_rollIntensity, m_camera.rollKeep ? "[Keep]" : ""), textPos).y;
 
 		textPos.y += RenderText(Utility::Sprintf("Track Zoom Top: %f", m_camera.pLanePitch), textPos).y;
 		textPos.y += RenderText(Utility::Sprintf("Track Zoom Bottom: %f", m_camera.pLaneZoom), textPos).y;

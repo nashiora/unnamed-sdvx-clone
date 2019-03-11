@@ -34,8 +34,10 @@ public:
 	void SetTargetRoll(float target);
 	void SetSpin(float direction, uint32 duration, uint8 type, class BeatmapPlayback& playback);
 	void SetXOffsetBounce(float direction, uint32 duration, uint32 amplitude, uint32 frequency, float decay, class BeatmapPlayback &playback);
-	float GetRoll() const;
+	// The roll the highway has ONLY because of lasers, without regard to the state of manual roll
 	float GetLaserRoll() const;
+	// The actual roll the highway has, laser roll or manual roll, but NOT accounting for spins
+	float GetVisualRoll() const;
 	float GetHorizonHeight();
 	Vector2i GetScreenCenter();
 	Vector3 GetShakeOffset();
@@ -58,7 +60,9 @@ public:
 	float pLaneOffset = 0.0f;
 	float pLaneZoom = 0.0f;
 	float pLanePitch = 0.0f;
-	float pLaneBaseRoll = 0.0f;
+	// manual roll control. Either laser roll or manual roll is applied, but never both
+	float pLaneTilt = 0.0f;
+	bool pLaneTiltEnabled = false;
 
 	float pitchUnit = 7.0f;
 
@@ -85,8 +89,9 @@ private:
 	// roll value
 	float m_totalRoll = 0.0f;
 	float m_laserRoll = 0.0f;
+	float m_visualRoll = 0.0f;
 	// Target to roll towards
-	float m_targetRoll = 0.0f;
+	float m_targetLaserRoll = 0.0f;
 	bool m_targetRollSet = false;
 	bool m_lasersActive = false;
 	// Roll force
