@@ -45,8 +45,8 @@ static float PitchScaleFunc(float input)
 
 	if (g_aspectRatio < 1.0f)
 	{
-		uLower = -2.63f;
-		uUpper = 5.17f;
+		uLower = -2.8195f;
+		uUpper = 4.675f;
 	}
 	else
 	{
@@ -90,7 +90,7 @@ static Transform GetOriginTransform(float pitch, float offs, float roll)
 	if (g_aspectRatio < 1.0f)
 	{
 		auto origin = Transform::Rotation({ 0, 0, roll });
-		auto anchor = Transform::Translation({ offs, -0.725f, 0 })
+		auto anchor = Transform::Translation({ offs, -0.8f, 0 })
 			* Transform::Rotation({ 1.5f, 0, 0 });
 		auto contnr = Transform::Translation({ 0, 0, -0.9f })
 			* Transform::Rotation({ -90 + pitch, 0, 0, });
@@ -110,11 +110,10 @@ static Transform GetOriginTransform(float pitch, float offs, float roll)
 
 void Camera::Tick(float deltaTime, class BeatmapPlayback& playback)
 {
-	auto LerpTo = [&](float &value, float target, float speed = 10)
+	auto LerpTo = [&](float &value, float target, float speed = 0.5f)
 	{
 		float diff = abs(target - value);
-		float change = diff * deltaTime * speed;
-		change = Math::Min(deltaTime * speed * 0.05f, change);
+		float change = deltaTime * speed;
 
 		if (target < value)
 			value = Math::Max(value - change, target);
@@ -122,8 +121,9 @@ void Camera::Tick(float deltaTime, class BeatmapPlayback& playback)
 	};
 
 	const TimingPoint& currentTimingPoint = playback.GetCurrentTimingPoint();
+	float speedlimit = m_rollIntensity * 3;
 
-	LerpTo(m_laserRoll, m_targetLaserRoll, m_targetLaserRoll != 0.0f ? 13 : 4);
+	LerpTo(m_laserRoll, m_targetLaserRoll, m_targetLaserRoll != 0.0f ? speedlimit : speedlimit / 2.f);
 
 	float actualTargetRoll;
 	if (pManualTiltEnabled)
