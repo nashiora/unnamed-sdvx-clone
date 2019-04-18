@@ -66,7 +66,7 @@ String Path::GetExtension(const String& path)
 }
 String Path::GetFileNameWithoutExtension(const String& path)
 {
-	size_t lastSepIndex = path.find(Path::sep);
+	size_t lastSepIndex = path.rfind(Path::sep);
 	size_t extIndex = path.find('.');
 
 	// If there's space between the last separator and the `.`, then there's a regular old file name

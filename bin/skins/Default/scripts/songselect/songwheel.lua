@@ -218,6 +218,9 @@ draw_diff_icon = function(diff, x, y, w, h, selected)
     gfx.FillColor(255,255,255)
     gfx.TextAlign(gfx.TEXT_ALIGN_MIDDLE + gfx.TEXT_ALIGN_CENTER)
     gfx.FastText(tostring(diff.level), x+(w/2),y+(h/2))
+    gfx.FontSize(h/10)
+    gfx.TextAlign(gfx.TEXT_ALIGN_LEFT + gfx.TEXT_ALIGN_BOTTOM)
+    gfx.FastText(tostring(diff.nameShort), x+shrinkX+3,y+h-shrinkY)
 end
 
 draw_cursor = function(x,y,rotation,width)
@@ -314,6 +317,15 @@ draw_selected = function(song, x, y, w, h)
         gfx.BeginPath()
         gfx.ImageRect(imageXPos, y+yMargin+yPadding, imageSize, imageSize, songCache[song.id][selectedDiff], 1, 0)
     end
+    gfx.BeginPath()
+    gfx.FillColor(0, 0, 0, 150)
+    gfx.Rect(imageXPos, y+yMargin+yPadding, imageSize,imageSize/10)
+    gfx.Fill()
+    gfx.BeginPath()
+    gfx.FillColor(255, 255, 255)
+    gfx.FontSize(imageSize/10)
+    gfx.TextAlign(gfx.TEXT_ALIGN_LEFT + gfx.TEXT_ALIGN_MIDDLE)
+    gfx.FastText(diff.name, imageXPos+2, y+yMargin+yPadding+imageSize/20)
     -- difficulty should take up 1/6 of height, full width, and be centered
     if aspectRatio == "PortraitWidescreen" then
       --difficulty wheel should be right below the jacketImage, and the same width as
