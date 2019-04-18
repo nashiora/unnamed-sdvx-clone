@@ -562,6 +562,14 @@ private:
 				m_PushStringToTable("jacketPath", Path::Normalize(song.second.GetMap()->path + "/" + settings.jacketPath).c_str());
 				m_PushIntToTable("level", settings.level);
 				m_PushIntToTable("difficulty", settings.difficulty);
+				m_PushStringToTable("name", settings.difficultyName.c_str());
+				m_PushStringToTable("nameShort", settings.difficultyNameShort.c_str());
+				lua_pushstring(m_lua, "color");
+				lua_newtable(m_lua);
+				m_PushIntToTable("r", (int)settings.difficultyColor[0]);
+				m_PushIntToTable("g", (int)settings.difficultyColor[1]);
+				m_PushIntToTable("b", (int)settings.difficultyColor[2]);
+				lua_settable(m_lua, -3);
 				m_PushIntToTable("id", diff->id);
 				m_PushStringToTable("effector", settings.effector.c_str());
 				m_PushIntToTable("topBadge", Scoring::CalculateBestBadge(diff->scores));

@@ -45,7 +45,7 @@ Ref<Beatmap> TryLoadMap(const String& path)
 		return Ref<Beatmap>();
 	}
 	FileReader reader(mapFile);
-	if(!newMap->Load(reader))
+	if(!newMap->Load(reader, Path::GetFileNameWithoutExtension(path)))
 	{
 		delete newMap;
 		return Ref<Beatmap>();

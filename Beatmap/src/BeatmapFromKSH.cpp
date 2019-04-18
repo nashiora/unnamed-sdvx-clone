@@ -307,7 +307,7 @@ AudioEffect ParseCustomEffect(const KShootEffectDefinition& def)
 	return effect;
 };
 
-bool Beatmap::m_ProcessKShootMap(BinaryStream& input, bool metadataOnly)
+bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool metadataOnly)
 {
 	KShootMap kshootMap;
 	if (!kshootMap.Init(input, metadataOnly))
@@ -437,18 +437,94 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, bool metadataOnly)
 		}
 		else if (s.first == "difficulty")
 		{
-			m_settings.difficulty = 0;
-			if (s.second == "challenge")
+			if (s.second == "light")
+			{
+#define SET_COLOR(r, g, b) do { m_settings.difficultyColor[0] = (r); m_settings.difficultyColor[1] = (g); m_settings.difficultyColor[2] = (b); } while (0)
+				m_settings.difficulty = 0;
+				if (chartFileName == "nov")
+				{
+					m_settings.difficultyName = "Novice";
+					m_settings.difficultyNameShort = "NOV";
+					SET_COLOR(180, 90, 255);
+				}
+				else
+				{
+					m_settings.difficultyName = "Light";
+					m_settings.difficultyNameShort = "LT";
+					SET_COLOR(50, 240, 0);
+				}
+			}
+			else if (s.second == "challenge")
 			{
 				m_settings.difficulty = 1;
+				if (chartFileName == "adv")
+				{
+					m_settings.difficultyName = "Advanced";
+					m_settings.difficultyNameShort = "ADV";
+					SET_COLOR(255, 255, 75);
+				}
+				else
+				{
+					m_settings.difficultyName = "Challenge";
+					m_settings.difficultyNameShort = "CH";
+					SET_COLOR(235, 230, 0);
+				}
 			}
 			else if (s.second == "extended")
 			{
 				m_settings.difficulty = 2;
+				if (chartFileName == "exh")
+				{
+					m_settings.difficultyName = "Exhaust";
+					m_settings.difficultyNameShort = "EXH";
+					SET_COLOR(230, 50, 100);
+				}
+				else
+				{
+					m_settings.difficultyName = "Extended";
+					m_settings.difficultyNameShort = "EX";
+					SET_COLOR(255, 0, 50);
+				}
 			}
 			else if (s.second == "infinite")
 			{
 				m_settings.difficulty = 3;
+				if (chartFileName == "mxm")
+				{
+					m_settings.difficultyName = "Maximum";
+					m_settings.difficultyNameShort = "MXM";
+					SET_COLOR(255, 255, 255);
+				}
+				else if (chartFileName == "inf")
+				{
+					m_settings.difficultyName = "Infinite";
+					m_settings.difficultyNameShort = "INF";
+					SET_COLOR(22, 20, 160);
+				}
+				else if (chartFileName == "grv")
+				{
+					m_settings.difficultyName = "Gravity";
+					m_settings.difficultyNameShort = "GRV";
+					SET_COLOR(255, 130, 10);
+				}
+				else if (chartFileName == "hvn")
+				{
+					m_settings.difficultyName = "Heaven";
+					m_settings.difficultyNameShort = "HVN";
+					SET_COLOR(10, 140, 215);
+				}
+				else if (chartFileName == "vvd")
+				{
+					m_settings.difficultyName = "Vivid";
+					m_settings.difficultyNameShort = "VVD";
+					SET_COLOR(255, 95, 150);
+				}
+				else
+				{
+					m_settings.difficultyName = "Infinite";
+					m_settings.difficultyNameShort = "IN";
+					SET_COLOR(130, 240, 255);
+				}
 			}
 		}
 		else if (s.first == "po")

@@ -32,6 +32,13 @@ struct BeatmapSettings
 	// Difficulty, as indicated by map creator
 	uint8 difficulty;
 
+	// The name of the difficulty
+	String difficultyName;
+	// The abbreviated name of the difficulty
+	String difficultyNameShort;
+	// The desired color of the difficulty
+	uint8 difficultyColor[3] = { 255, 255, 255 };
+
 	// Total, total gauge gained when played perfectly
 	uint16 total = 210;
 
@@ -58,7 +65,7 @@ public:
 	Beatmap(Beatmap&& other);
 	Beatmap& operator=(Beatmap&& other);
 
-	bool Load(BinaryStream& input, bool metadataOnly = false);
+	bool Load(BinaryStream& input, String chartFileName, bool metadataOnly = false);
 	// Saves the map as it's own format
 	bool Save(BinaryStream& output) const;
 
@@ -92,7 +99,7 @@ public:
 	AudioEffect GetFilter(EffectType type) const;
 
 private:
-	bool m_ProcessKShootMap(BinaryStream& input, bool metadataOnly);
+	bool m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool metadataOnly);
 	bool m_Serialize(BinaryStream& stream, bool metadataOnly);
 
 	Map<EffectType, AudioEffect> m_customEffects;

@@ -40,11 +40,11 @@ Beatmap& Beatmap::operator=(Beatmap&& other)
 	m_settings = std::move(other.m_settings);
 	return *this;
 }
-bool Beatmap::Load(BinaryStream& input, bool metadataOnly)
+bool Beatmap::Load(BinaryStream& input, String chartFileName, bool metadataOnly)
 {
 	ProfilerScope $("Load Beatmap");
 
-	if(!m_ProcessKShootMap(input, metadataOnly)) // Load KSH format first
+	if(!m_ProcessKShootMap(input, chartFileName, metadataOnly)) // Load KSH format first
 	{
 		// Load binary map format
 		input.Seek(0);
@@ -199,6 +199,12 @@ BinaryStream& operator<<(BinaryStream& stream, BeatmapSettings& settings)
 
 	stream << settings.level;
 	stream << settings.difficulty;
+
+	stream << settings.difficultyName;
+	stream << settings.difficultyNameShort;
+	stream << settings.difficultyColor[0];
+	stream << settings.difficultyColor[1];
+	stream << settings.difficultyColor[2];
 
 	stream << settings.previewOffset;
 	stream << settings.previewDuration;

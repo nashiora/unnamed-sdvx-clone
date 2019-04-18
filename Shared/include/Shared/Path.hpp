@@ -71,6 +71,8 @@ public:
 
 	// Returns the extension found in given input path
 	static String GetExtension(const String& path);
+	// Returns the file name without extension found in given input path
+	static String GetFileNameWithoutExtension(const String& path);
 	// Replace the extension in the input path(if any) and replaces it with a new one (or add one if none exists)
 	// If the new extension is empty the '.' character that would normally come before the new extension is removed
 	static String ReplaceExtension(String path, String newExt);

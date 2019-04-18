@@ -64,6 +64,17 @@ String Path::GetExtension(const String& path)
 		return String();
 	return path.substr(dotPos + 1);
 }
+String Path::GetFileNameWithoutExtension(const String& path)
+{
+	size_t lastSepIndex = path.find(Path::sep);
+	size_t extIndex = path.find('.');
+
+	// If there's space between the last separator and the `.`, then there's a regular old file name
+	if (extIndex > lastSepIndex)
+		return path.substr(lastSepIndex + 1, extIndex - lastSepIndex - 1);
+	// otherwise just return everything after the last separator
+	else return path.substr(lastSepIndex + 1);
+}
 String Path::ReplaceExtension(String path, String newExt)
 {
 	newExt.TrimFront('.');

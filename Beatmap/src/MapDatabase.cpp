@@ -703,8 +703,7 @@ private:
 				if(fileStream.OpenRead(f.first))
 				{
 					FileReader reader(fileStream);
-
-					if(map.Load(reader, true))
+					if(map.Load(reader, Path::GetFileNameWithoutExtension(f.first), true))
 					{
 						mapValid = true;
 					}

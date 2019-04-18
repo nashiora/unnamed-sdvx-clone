@@ -206,7 +206,12 @@ draw_diff_icon = function(diff, x, y, w, h, selected)
     gfx.BeginPath()
     gfx.RoundedRectVarying(x+shrinkX,y+shrinkY,w-shrinkX*2,h-shrinkY*2,0,0,0,0)
     gfx.FillColor(15,15,15)
-    gfx.StrokeColor(table.unpack(diffColors[diff.difficulty + 1]))
+    if diff.color then
+      gfx.StrokeColor(diff.color.r, diff.color.g, diff.color.b)
+    else
+      --gfx.StrokeColor(table.unpack(diffColors[diff.difficulty + 1]))
+      gfx.StrokeColor(0, 0, 0)
+    end
     gfx.StrokeWidth(2)
     gfx.Fill()
     gfx.Stroke()
