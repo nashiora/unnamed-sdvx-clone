@@ -630,6 +630,8 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 		// flag set when a new effect parameter is set and a new hold notes should be created
 		bool splitupHoldNotes[2] = { false, false };
 
+		bool isManualTilt = false;
+
 		// Process settings
 		for (auto& p : tick.settings)
 		{
@@ -783,7 +785,7 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 				ZoomControlPoint* point = new ZoomControlPoint();
 				point->time = mapTime;
 				point->index = 1;
-				point->zoom = (float)atol(*p.second) / 100.0f;
+				point->zoom = (float)(atol(*p.second) / 100.0);
 				m_zoomControlPoints.Add(point);
 				CHECK_FIRST;
 			}
@@ -796,6 +798,7 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 				m_zoomControlPoints.Add(point);
 				CHECK_FIRST;
 			}
+			/* OLD USC MANUAL ROLL, KEPT JUST IN CASE
 			else if (p.first == "roll")
 			{
 				ZoomControlPoint* point = new ZoomControlPoint();
@@ -805,6 +808,7 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 				m_zoomControlPoints.Add(point);
 				CHECK_FIRST;
 			}
+			*/
 			else if (p.first == "lane_toggle")
 			{
 				LaneHideTogglePoint* point = new LaneHideTogglePoint();
@@ -818,6 +822,7 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 				evt->time = mapTime;
 				evt->key = EventKey::TrackRollBehaviour;
 				evt->data.rollVal = TrackRollBehaviour::Zero;
+
 				String v = p.second;
 				size_t f = v.find("keep_");
 				if (f != -1)
@@ -827,18 +832,37 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, String chartFileName, bool
 				}
 
 				if (v == "normal")
-				{
 					evt->data.rollVal = evt->data.rollVal | TrackRollBehaviour::Normal;
-				}
 				else if (v == "bigger")
-				{
 					evt->data.rollVal = evt->data.rollVal | TrackRollBehaviour::Bigger;
-				}
 				else if (v == "biggest")
-				{
 					evt->data.rollVal = evt->data.rollVal | TrackRollBehaviour::Biggest;
+				else
+				{
+					evt->data.rollVal = TrackRollBehaviour::Manual;
+
+					ZoomControlPoint* point = new ZoomControlPoint();
+					point->time = mapTime;
+					point->index = 3;
+					point->zoom = atof(*p.second) / -(360.0 / 14.0);
+					m_zoomControlPoints.Add(point);
+					CHECK_FIRST;
+
+					isManualTilt = true;
+					goto after_manual_check;
 				}
 
+				if (isManualTilt)
+				{
+					ZoomControlPoint* point = new ZoomControlPoint();
+					point->time = mapTime;
+					point->index = 3;
+					point->zoom = m_zoomControlPoints.back()->zoom;
+					m_zoomControlPoints.Add(point);
+					CHECK_FIRST; // unnecessary but hey
+				}
+
+			after_manual_check:
 				m_objectStates.Add(*evt);
 			}
 			else if (p.first == "fx-r_se")

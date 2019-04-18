@@ -263,6 +263,14 @@ void Application::m_InitDiscord()
 bool Application::m_Init()
 {
 	ProfilerScope $("Application Setup");
+	Logf("Version: %d.%d.%d", Logger::Info, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+
+#ifdef GIT_COMMIT
+	Logf("Git commit: %s", Logger::Info, GIT_COMMIT);
+#endif // GIT_COMMIT
+
+
+
 
 	// Must have command line
 	assert(m_commandLine.size() >= 1);
@@ -317,7 +325,10 @@ bool Application::m_Init()
 		g_gameConfig.GetInt(GameConfigKeys::ScreenWidth),
 		g_gameConfig.GetInt(GameConfigKeys::ScreenHeight));
 	g_aspectRatio = (float)g_resolution.x / (float)g_resolution.y;
-	g_gameWindow = new Graphics::Window(g_resolution);
+	int samplecount = g_gameConfig.GetInt(GameConfigKeys::AntiAliasing);
+	if (samplecount > 0)
+		samplecount = 1 << samplecount;
+	g_gameWindow = new Graphics::Window(g_resolution, samplecount);
 	g_gameWindow->Show();
 
 	g_gameWindow->OnKeyPressed.Add(this, &Application::m_OnKeyPressed);
@@ -1148,6 +1159,29 @@ static int lCreateSkinImage(lua_State* L /*const char* filename, int imageflags 
 	return 0;
 }
 
+static int lLoadSkinAnimation(lua_State* L)
+{
+	const char* p;
+	float frametime;
+	int loopcount = 0;
+
+	p = luaL_checkstring(L, 1);
+	frametime = luaL_checknumber(L, 2);
+	if (lua_gettop(L) == 3)
+	{
+		loopcount = luaL_checkinteger(L, 3);
+	}
+
+	String path = "skins/" + g_application->GetCurrentSkin() + "/textures/" + p;
+
+	int result = LoadAnimation(L, *path, frametime, loopcount);
+	if (result == -1)
+		return 0;
+
+	lua_pushnumber(L, result);
+	return 1;
+}
+
 static int lLoadSkinFont(lua_State* L /*const char* name */)
 {
 	const char* name = luaL_checkstring(L, 1);
@@ -1307,6 +1341,10 @@ void Application::m_SetNvgLuaBindings(lua_State * state)
 		pushFuncToTable("ImageSize", lImageSize);
 		pushFuncToTable("Arc", lArc);
 		pushFuncToTable("SetImageTint", lSetImageTint);
+		pushFuncToTable("LoadAnimation", lLoadAnimation);
+		pushFuncToTable("LoadSkinAnimation", lLoadSkinAnimation);
+		pushFuncToTable("TickAnimation", lTickAnimation);
+		pushFuncToTable("ResetAnimation", lResetAnimation);
 		pushFuncToTable("GlobalCompositeOperation", lGlobalCompositeOperation);
 		pushFuncToTable("GlobalCompositeBlendFunc", lGlobalCompositeBlendFunc);
 		pushFuncToTable("GlobalCompositeBlendFuncSeparate", lGlobalCompositeBlendFuncSeparate);
