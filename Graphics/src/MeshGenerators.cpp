@@ -3,17 +3,17 @@
 
 namespace Graphics
 {
-	Mesh MeshGenerators::Quad(OpenGL* gl, Vector2 pos, Vector2 size /*= Vector2(1,1)*/)
+	Mesh MeshGenerators::Quad(OpenGL* gl, Vector2 pos, Vector2 size /*= Vector2(1,1)*/, Rect uv /*= Rect(0, 0, 1, 1)*/)
 	{
 		Vector<SimpleVertex> verts =
 		{
-			{ { 0.0f,  size.y, 0.0f }, { 0.0f, 0.0f } },
-			{ { size.x, 0.0f,  0.0f }, { 1.0f, 1.0f } },
-			{ { size.x, size.y, 0.0f }, { 1.0f, 0.0f } },
+			{ { 0.0f,  size.y, 0.0f }, { uv.Left(), uv.Top() } },
+			{ { size.x, 0.0f,  0.0f }, { uv.Right(), uv.Bottom() } },
+			{ { size.x, size.y, 0.0f }, { uv.Right(), uv.Top() } },
 
-			{ { 0.0f,  size.y, 0.0f }, { 0.0f, 0.0f } },
-			{ { 0.0f,  0.0f,  0.0f }, { 0.0f, 1.0f } },
-			{ { size.x, 0.0f,  0.0f }, { 1.0f, 1.0f } },
+			{ { 0.0f,  size.y, 0.0f }, { uv.Left(), uv.Top() } },
+			{ { 0.0f,  0.0f,  0.0f }, { uv.Left(), uv.Bottom() } },
+			{ { size.x, 0.0f,  0.0f }, { uv.Right(), uv.Bottom() } },
 		};
 
 		for(auto& v : verts)

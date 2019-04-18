@@ -19,7 +19,7 @@ namespace Graphics
 			Vector2 tex;
 		};
 
-		Mesh Quad(OpenGL* gl, Vector2 pos, Vector2 size = Vector2(1, 1));
+		Mesh Quad(OpenGL* gl, Vector2 pos, Vector2 size = Vector2(1, 1), Rect uv = Rect(0, 0, 1, 1));
 
 		// Generates vertices for a quad from a given rectangle, with given uv coordinate rectangle
 		// the position top = +y

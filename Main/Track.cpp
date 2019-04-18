@@ -110,7 +110,7 @@ bool Track::AsyncFinalize()
 	// Set Texture states
 	trackTexture->SetMipmaps(false);
 	trackTexture->SetFilter(true, true, 16.0f);
-	trackTexture->SetWrap(TextureWrap::Clamp, TextureWrap::Clamp);
+	trackTexture->SetWrap(TextureWrap::Clamp, TextureWrap::Repeat);
 	trackTickTexture->SetMipmaps(true);
 	trackTickTexture->SetFilter(true, true, 16.0f);
 	trackTickTexture->SetWrap(TextureWrap::Repeat, TextureWrap::Clamp);
@@ -283,8 +283,6 @@ void Track::Tick(class BeatmapPlayback& playback, float deltaTime)
 		//laserAlertOpacity[i] = Math::Clamp<float>(laserAlertOpacity[i], 0.0f, 1.0f);
 		//m_alertTimer[i] += deltaTime;
 	}
-
-
 }
 
 void Track::DrawLaserBase(RenderQueue& rq, class BeatmapPlayback& playback, const Vector<ObjectState*>& objects)
