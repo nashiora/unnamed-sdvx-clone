@@ -19,7 +19,6 @@
 #include <iterator>
 #include <mutex>
 
-
 class TextInput
 {
 public:
@@ -186,14 +185,15 @@ private:
 };
 const float PreviewPlayer::m_fadeDuration = 0.5f;
 
+#if defined(USE_OLD_SONG_SELECT)
 /*
 	Song selection wheel
 */
-class SelectionWheel
+class OLD_SelectionWheel
 {
 	// keyed on SongSelectIndex::id
-	Map<int32, SongSelectIndex> m_maps;
-	Map<int32, SongSelectIndex> m_mapFilter;
+	Map<int32, OLD_SongSelectIndex> m_maps;
+	Map<int32, OLD_SongSelectIndex> m_mapFilter;
 	bool m_filterSet = false;
 
 	// Currently selected selection ID
@@ -213,7 +213,7 @@ class SelectionWheel
 	std::mutex m_lock;
 
 public:
-	SelectionWheel()
+	OLD_SelectionWheel()
 	{
 	}
 	bool Init()
@@ -249,7 +249,7 @@ public:
 			assert(false);
 		}
 	}
-	~SelectionWheel()
+	~OLD_SelectionWheel()
 	{
 		g_gameConfig.Set(GameConfigKeys::LastSelected, m_currentlySelectedMapId);
 		if (m_lua)
@@ -259,7 +259,7 @@ public:
 	{
 		for(auto m : maps)
 		{
-			SongSelectIndex index(m);
+			OLD_SongSelectIndex index(m);
 			m_maps.Add(index.id, index);
 		}
 		AdvanceSelection(0);
@@ -270,7 +270,7 @@ public:
 		for(auto m : maps)
 		{
 			// TODO(local): don't hard-code the id calc here, maybe make it a utility function?
-			SongSelectIndex index = m_maps.at(m->selectId * 10);
+			OLD_SongSelectIndex index = m_maps.at(m->selectId * 10);
 			m_maps.erase(index.id);
 		}
 		if(!m_maps.Contains(m_currentlySelectedId))
@@ -283,7 +283,7 @@ public:
 		for(auto m : maps)
 		{
 			// TODO(local): don't hard-code the id calc here, maybe make it a utility function?
-			SongSelectIndex index = m_maps.at(m->selectId * 10);
+			OLD_SongSelectIndex index = m_maps.at(m->selectId * 10);
 		}
 	}
 	void OnMapsCleared(Map<int32, MapIndex*> newList)
@@ -293,7 +293,7 @@ public:
 		m_maps.clear();
 		for (auto m : newList)
 		{
-			SongSelectIndex index(m.second);
+			OLD_SongSelectIndex index(m.second);
 			m_maps.Add(index.id, index);
 		}
 		if(m_maps.size() > 0)
@@ -403,8 +403,8 @@ public:
 		m_currentlySelectedDiff = newDiff;
 		m_SetLuaDiffIndex();
 
-		Map<int32, SongSelectIndex> maps = m_SourceCollection();
-		SongSelectIndex* map = maps.Find(m_currentlySelectedId);
+		Map<int32, OLD_SongSelectIndex> maps = m_SourceCollection();
+		OLD_SongSelectIndex* map = maps.Find(m_currentlySelectedId);
 		if(map)
 		{
 			OnDifficultySelected.Call(map[0].GetDifficulties()[m_currentlySelectedDiff]);
@@ -412,8 +412,8 @@ public:
 	}
 	void AdvanceDifficultySelection(int32 offset)
 	{
-		Map<int32, SongSelectIndex> maps = m_SourceCollection();
-		SongSelectIndex map = maps[m_currentlySelectedId];
+		Map<int32, OLD_SongSelectIndex> maps = m_SourceCollection();
+		OLD_SongSelectIndex map = maps[m_currentlySelectedId];
 		int32 newIdx = m_currentlySelectedDiff + offset;
 		newIdx = Math::Clamp(newIdx, 0, (int32)map.GetDifficulties().size() - 1);
 		SelectDifficulty(newIdx);
@@ -429,14 +429,14 @@ public:
 		m_mapFilter.clear();
 		for (auto m : filter)
 		{
-			SongSelectIndex index(m.second);
+			OLD_SongSelectIndex index(m.second);
 			m_mapFilter.Add(index.id, index);
 		}
 		m_filterSet = true;
 		m_SetLuaMaps(false);
 		AdvanceSelection(0);
 	}
-	void SetFilter(SongFilter* filter[2])
+	void SetFilter(OLD_SongFilter* filter[2])
 	{
 		bool isFiltered = false;
 		m_mapFilter = m_maps;
@@ -464,14 +464,14 @@ public:
 
 	MapIndex* GetSelection() const
 	{
-		SongSelectIndex const* map = m_SourceCollection().Find(m_currentlySelectedId);
+		OLD_SongSelectIndex const* map = m_SourceCollection().Find(m_currentlySelectedId);
 		if(map)
 			return map->GetMap();
 		return nullptr;
 	}
 	DifficultyIndex* GetSelectedDifficulty() const
 	{
-		SongSelectIndex const* map = m_SourceCollection().Find(m_currentlySelectedId);
+		OLD_SongSelectIndex const* map = m_SourceCollection().Find(m_currentlySelectedId);
 		if(map)
 			return map->GetDifficulties()[m_currentlySelectedDiff];
 		return nullptr;
@@ -492,7 +492,7 @@ public:
 	}
 
 private:
-	const Map<int32, SongSelectIndex>& m_SourceCollection() const
+	const Map<int32, OLD_SongSelectIndex>& m_SourceCollection() const
 	{
 		return m_filterSet ? m_mapFilter : m_maps;
 	}
@@ -551,7 +551,7 @@ private:
 			g_gameWindow->ShowMessageBox("Lua Error songs_changed", lua_tostring(m_lua, -1), 0);
 		}
 	}
-	void m_SetLuaMaps(const char *key, const Map<int32, SongSelectIndex>& collection)
+	void m_SetLuaMaps(const char *key, const Map<int32, OLD_SongSelectIndex>& collection)
 	{
 		lua_getglobal(m_lua, "songwheel");
 		lua_pushstring(m_lua, key);
@@ -608,7 +608,7 @@ private:
 		lua_setglobal(m_lua, "songwheel");
 	}
 	// TODO(local): pretty sure this should be m_OnIndexSelected, and we should filter a call to OnMapSelected
-	void m_OnMapSelected(SongSelectIndex index)
+	void m_OnMapSelected(OLD_SongSelectIndex index)
 	{
 		//if(map && map->id == m_currentlySelectedId)
 		//	return;
@@ -625,28 +625,30 @@ private:
 		m_currentlySelectedMapId = index.GetMap()->id;
 	}
 };
+#endif // defined(USE_OLD_SONG_SELECT)
 
 
+#if defined(USE_OLD_SONG_SELECT)
 /*
 	Filter selection element
 */
-class FilterSelection
+class OLD_FilterSelection
 {
 public:
-	FilterSelection(Ref<SelectionWheel> selectionWheel) : m_selectionWheel(selectionWheel)
+	OLD_FilterSelection(Ref<OLD_SelectionWheel> selectionWheel) : m_selectionWheel(selectionWheel)
 	{
 
 	}
 	bool Init()
 	{
-		SongFilter* lvFilter = new SongFilter();
-		SongFilter* flFilter = new SongFilter();
+		OLD_SongFilter* lvFilter = new OLD_SongFilter();
+		OLD_SongFilter* flFilter = new OLD_SongFilter();
 
-		AddFilter(lvFilter, FilterType::Level);
-		AddFilter(flFilter, FilterType::Folder);
+		AddFilter(lvFilter, OLD_FilterType::Level);
+		AddFilter(flFilter, OLD_FilterType::Folder);
 		for (size_t i = 1; i <= 20; i++)
 		{
-			AddFilter(new LevelFilter(i), FilterType::Level);
+			AddFilter(new OLD_LevelFilter(i), OLD_FilterType::Level);
 		}
 		CheckedLoad(m_lua = g_application->LoadScript("songselect/filterwheel"));
 		return true;
@@ -667,7 +669,7 @@ public:
 			assert(false);
 		}
 	}
-	~FilterSelection()
+	~OLD_FilterSelection()
 	{
 		g_gameConfig.Set(GameConfigKeys::FolderFilter, m_currentFolderSelection);
 		g_gameConfig.Set(GameConfigKeys::LevelFilter, m_currentLevelSelection);
@@ -690,19 +692,19 @@ public:
 		return false;
 	}
 
-	void AddFilter(SongFilter* filter, FilterType type)
+	void AddFilter(OLD_SongFilter* filter, OLD_FilterType type)
 	{
-		if (type == FilterType::Level)
+		if (type == OLD_FilterType::Level)
 			m_levelFilters.Add(filter);
 		else
 			m_folderFilters.Add(filter);
 	}
 
-	void SelectFilter(SongFilter* filter, FilterType type)
+	void SelectFilter(OLD_SongFilter* filter, OLD_FilterType type)
 	{
-		uint8 t = type == FilterType::Folder ? 0 : 1;
+		uint8 t = type == OLD_FilterType::Folder ? 0 : 1;
 		int index = 0;
-		if (type == FilterType::Folder)
+		if (type == OLD_FilterType::Folder)
 		{
 			index = std::find(m_folderFilters.begin(), m_folderFilters.end(), filter) - m_folderFilters.begin();
 		}
@@ -714,7 +716,7 @@ public:
 
 		lua_getglobal(m_lua, "set_selection");
 		lua_pushnumber(m_lua, index + 1);
-		lua_pushboolean(m_lua, type == FilterType::Folder);
+		lua_pushboolean(m_lua, type == OLD_FilterType::Folder);
 		if (lua_pcall(m_lua, 2, 0, 0) != 0)
 		{
 			Logf("Lua error on set_selection: %s", Logger::Error, lua_tostring(m_lua, -1));
@@ -734,7 +736,7 @@ public:
 		else
 		{
 			m_currentLevelSelection = level;
-			SelectFilter(m_levelFilters[level], FilterType::Level);
+			SelectFilter(m_levelFilters[level], OLD_FilterType::Level);
 		}
 
 		if (folder >= m_folderFilters.size())
@@ -744,7 +746,7 @@ public:
 		else
 		{
 			m_currentFolderSelection = folder;
-			SelectFilter(m_folderFilters[folder], FilterType::Folder);
+			SelectFilter(m_folderFilters[folder], OLD_FilterType::Folder);
 		}
 	}
 
@@ -755,14 +757,14 @@ public:
 			m_currentFolderSelection = ((int)m_currentFolderSelection + offset) % (int)m_folderFilters.size();
 			if (m_currentFolderSelection < 0)
 				m_currentFolderSelection = m_folderFilters.size() + m_currentFolderSelection;
-			SelectFilter(m_folderFilters[m_currentFolderSelection], FilterType::Folder);
+			SelectFilter(m_folderFilters[m_currentFolderSelection], OLD_FilterType::Folder);
 		}
 		else
 		{
 			m_currentLevelSelection = ((int)m_currentLevelSelection + offset) % (int)m_levelFilters.size();
 			if (m_currentLevelSelection < 0)
 				m_currentLevelSelection = m_levelFilters.size() + m_currentLevelSelection;
-			SelectFilter(m_levelFilters[m_currentLevelSelection], FilterType::Level);
+			SelectFilter(m_levelFilters[m_currentLevelSelection], OLD_FilterType::Level);
 		}
 	}
 
@@ -771,9 +773,9 @@ public:
 		m_mapDB = db;
 		for (String p : Path::GetSubDirs(g_gameConfig.GetString(GameConfigKeys::SongFolder)))
 		{
-			SongFilter* filter = new FolderFilter(p, m_mapDB);
-			if(filter->GetFiltered(Map<int32, SongSelectIndex>()).size() > 0)
-				AddFilter(filter, FilterType::Folder);
+			OLD_SongFilter* filter = new OLD_FolderFilter(p, m_mapDB);
+			if(filter->GetFiltered(Map<int32, OLD_SongSelectIndex>()).size() > 0)
+				AddFilter(filter, OLD_FilterType::Folder);
 		}
 		m_SetLuaTable();
 	}
@@ -838,16 +840,17 @@ private:
 		lua_setglobal(m_lua, "filters");
 	}
 
-	Ref<SelectionWheel> m_selectionWheel;
-	Vector<SongFilter*> m_folderFilters;
-	Vector<SongFilter*> m_levelFilters;
+	Ref<OLD_SelectionWheel> m_selectionWheel;
+	Vector<OLD_SongFilter*> m_folderFilters;
+	Vector<OLD_SongFilter*> m_levelFilters;
 	int32 m_currentFolderSelection = 0;
 	int32 m_currentLevelSelection = 0;
 	bool m_selectingFolders = true;
-	SongFilter* m_currentFilters[2] = { nullptr };
+	OLD_SongFilter* m_currentFilters[2] = { nullptr };
 	MapDatabase* m_mapDB;
 	lua_State* m_lua = nullptr;
 };
+#endif // defined(USE_OLD_SONG_SELECT)
 
 class GameSettingsWheel{
 public:
@@ -984,19 +987,20 @@ private:
 	lua_State* m_lua = nullptr;
 };
 
+#if defined(USE_OLD_SONG_SELECT)
 /*
 	Song select window/screen
 */
-class SongSelect_Impl : public SongSelect
+class OLD_SongSelect_Impl : public SongSelect
 {
 private:
 	Timer m_dbUpdateTimer;
 	MapDatabase m_mapDatabase;
 
 	// Map selection wheel
-	Ref<SelectionWheel> m_selectionWheel;
+	Ref<OLD_SelectionWheel> m_selectionWheel;
 	// Filter selection
-	Ref<FilterSelection> m_filterSelection;
+	Ref<OLD_FilterSelection> m_filterSelection;
 	// Game settings wheel
 	Ref<GameSettingsWheel> m_settingsWheel;
 	// Search text logic object
@@ -1027,36 +1031,36 @@ public:
 	bool Init() override
 	{
 		CheckedLoad(m_lua = g_application->LoadScript("songselect/background"));
-		g_input.OnButtonPressed.Add(this, &SongSelect_Impl::m_OnButtonPressed);
-		g_input.OnButtonReleased.Add(this, &SongSelect_Impl::m_OnButtonReleased);
-		g_gameWindow->OnMouseScroll.Add(this, &SongSelect_Impl::m_OnMouseScroll);
+		g_input.OnButtonPressed.Add(this, &OLD_SongSelect_Impl::m_OnButtonPressed);
+		g_input.OnButtonReleased.Add(this, &OLD_SongSelect_Impl::m_OnButtonReleased);
+		g_gameWindow->OnMouseScroll.Add(this, &OLD_SongSelect_Impl::m_OnMouseScroll);
 		m_settingsWheel = Ref<GameSettingsWheel>(new GameSettingsWheel());
 		if (!m_settingsWheel->Init())
 			return false;
 		m_selectSound = g_audio->CreateSample("audio/menu_click.wav");
-		m_selectionWheel = Ref<SelectionWheel>(new SelectionWheel());
+		m_selectionWheel = Ref<OLD_SelectionWheel>(new OLD_SelectionWheel());
 		if (!m_selectionWheel->Init())
 			return false;
-		m_filterSelection = Ref<FilterSelection>(new FilterSelection(m_selectionWheel));
+		m_filterSelection = Ref<OLD_FilterSelection>(new OLD_FilterSelection(m_selectionWheel));
 		if (!m_filterSelection->Init())
 			return false;
 		m_filterSelection->SetMapDB(&m_mapDatabase);
-		m_selectionWheel->OnMapSelected.Add(this, &SongSelect_Impl::OnMapSelected);
-		m_selectionWheel->OnDifficultySelected.Add(this, &SongSelect_Impl::OnDifficultySelected);
+		m_selectionWheel->OnMapSelected.Add(this, &OLD_SongSelect_Impl::OnMapSelected);
+		m_selectionWheel->OnDifficultySelected.Add(this, &OLD_SongSelect_Impl::OnDifficultySelected);
 		// Setup the map database
 		m_mapDatabase.AddSearchPath(g_gameConfig.GetString(GameConfigKeys::SongFolder));
 
-		m_mapDatabase.OnMapsAdded.Add(m_selectionWheel.GetData(), &SelectionWheel::OnMapsAdded);
-		m_mapDatabase.OnMapsUpdated.Add(m_selectionWheel.GetData(), &SelectionWheel::OnMapsUpdated);
-		m_mapDatabase.OnMapsCleared.Add(m_selectionWheel.GetData(), &SelectionWheel::OnMapsCleared);
-		m_mapDatabase.OnSearchStatusUpdated.Add(m_selectionWheel.GetData(), &SelectionWheel::OnSearchStatusUpdated);
+		m_mapDatabase.OnMapsAdded.Add(m_selectionWheel.GetData(), &OLD_SelectionWheel::OnMapsAdded);
+		m_mapDatabase.OnMapsUpdated.Add(m_selectionWheel.GetData(), &OLD_SelectionWheel::OnMapsUpdated);
+		m_mapDatabase.OnMapsCleared.Add(m_selectionWheel.GetData(), &OLD_SelectionWheel::OnMapsCleared);
+		m_mapDatabase.OnSearchStatusUpdated.Add(m_selectionWheel.GetData(), &OLD_SelectionWheel::OnSearchStatusUpdated);
 		m_mapDatabase.StartSearching();
 
 		m_filterSelection->SetFiltersByIndex(g_gameConfig.GetInt(GameConfigKeys::LevelFilter), g_gameConfig.GetInt(GameConfigKeys::FolderFilter));
 		m_selectionWheel->SelectByMapId(g_gameConfig.GetInt(GameConfigKeys::LastSelected));
 
 		m_searchInput = Ref<TextInput>(new TextInput());
-		m_searchInput->OnTextChanged.Add(this, &SongSelect_Impl::OnSearchTermChanged);
+		m_searchInput->OnTextChanged.Add(this, &OLD_SongSelect_Impl::OnSearchTermChanged);
 
 
 		/// TODO: Check if debugmute is enabled
@@ -1064,7 +1068,7 @@ public:
 
 		return true;
 	}
-	~SongSelect_Impl()
+	~OLD_SongSelect_Impl()
 	{
 		// Clear callbacks
 		m_mapDatabase.OnMapsCleared.Clear();
@@ -1517,8 +1521,99 @@ public:
 	}
 };
 
+#else // defined(USE_OLD_SONG_SELECT)
+
+SongSelect* SongSelect::SONGSELECT = nullptr;
+
+class SongSelect_Impl : public SongSelect
+{
+private:
+
+public:
+	~SongSelect_Impl()
+	{
+		if (SONGSELECT)
+		{
+			assert(this == SONGSELECT);
+			SONGSELECT = nullptr;
+		}
+	}
+
+	SongSelect_Impl()
+	{
+	}
+
+	virtual bool Init() override
+	{
+		return true;
+	}
+
+	virtual void OnSuspend() override
+	{
+	}
+
+	virtual void OnRestore() override
+	{
+	}
+
+	void m_OnButtonPressed(Input::Button buttonCode)
+	{
+		if (IsSuspended()) return;
+	}
+
+	void m_OnButtonReleased(Input::Button buttonCode)
+	{
+		if (IsSuspended()) return;
+	}
+
+	void m_OnMouseScroll(int32 numSteps)
+	{
+		if (IsSuspended()) return;
+	}
+
+	virtual void OnKeyPressed(int32 key) override
+	{
+		if (IsSuspended()) return;
+
+		if (key == SDLK_ESCAPE)
+		{
+			// TODO(local): might want to add an m_active flag for this in particular but ehhhhhh
+			g_application->RemoveTickable(this);
+		}
+	}
+
+	virtual void OnKeyReleased(int32 key) override
+	{
+		if (IsSuspended()) return;
+	}
+
+	virtual void Tick(float deltaTime) override
+	{
+		if (IsSuspended()) return;
+	}
+
+	virtual void Render(float deltaTime) override
+	{
+		if (IsSuspended()) return;
+	}
+
+	SongSelect_Impl(const SongSelect_Impl&) = delete;
+	SongSelect_Impl& operator=(const SongSelect_Impl&) = delete;
+
+	SongSelect_Impl(SongSelect_Impl&&) = delete;
+	SongSelect_Impl& operator=(SongSelect_Impl&&) = delete;
+};
+
+#endif // defined(USE_OLD_SONG_SELECT)
+
 SongSelect* SongSelect::Create()
 {
+#if defined(USE_OLD_SONG_SELECT)
+	OLD_SongSelect_Impl* impl = new OLD_SongSelect_Impl();
+#else
+	assert(!SONGSELECT); // should only ever be one rite?
 	SongSelect_Impl* impl = new SongSelect_Impl();
+	SONGSELECT = impl;
+#endif
 	return impl;
 }

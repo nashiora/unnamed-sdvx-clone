@@ -3,23 +3,26 @@
 #include "ApplicationTickable.hpp"
 #include <Beatmap/MapDatabase.hpp>
 
-struct SongSelectIndex
+//#define USE_OLD_SONG_SELECT
+
+#if defined(USE_OLD_SONG_SELECT)
+struct OLD_SongSelectIndex
 {
 public:
-	SongSelectIndex() = default;
-	SongSelectIndex(MapIndex* map)
+	OLD_SongSelectIndex() = default;
+	OLD_SongSelectIndex(MapIndex* map)
 		: m_map(map), m_diffs(map->difficulties),
 		id(map->selectId * 10)
 	{
 	}
 
-	SongSelectIndex(MapIndex* map, Vector<DifficultyIndex*> diffs)
+	OLD_SongSelectIndex(MapIndex* map, Vector<DifficultyIndex*> diffs)
 		: m_map(map), m_diffs(diffs),
 		id(map->selectId * 10)
 	{
 	}
 
-	SongSelectIndex(MapIndex* map, DifficultyIndex* diff)
+	OLD_SongSelectIndex(MapIndex* map, DifficultyIndex* diff)
 		: m_map(map)
 	{
 		m_diffs.Add(diff);
@@ -47,7 +50,7 @@ private:
 	MapIndex * m_map;
 	Vector<DifficultyIndex*> m_diffs;
 };
-
+#endif
 
 /*
 	Song select screen
@@ -55,6 +58,7 @@ private:
 class SongSelect : public IApplicationTickable
 {
 protected:
+	static SongSelect* SONGSELECT;
 	SongSelect() = default;
 public:
 	virtual ~SongSelect() = default;
