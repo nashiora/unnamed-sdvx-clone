@@ -1528,6 +1528,7 @@ SongSelect* SongSelect::SONGSELECT = nullptr;
 class SongSelect_Impl : public SongSelect
 {
 private:
+	lua_State* m_lua = nullptr;
 
 public:
 	~SongSelect_Impl()
@@ -1545,6 +1546,7 @@ public:
 
 	virtual bool Init() override
 	{
+		CheckedLoad(m_lua = g_application->LoadScript("songselect"));
 		return true;
 	}
 
@@ -1580,6 +1582,26 @@ public:
 			// TODO(local): might want to add an m_active flag for this in particular but ehhhhhh
 			g_application->RemoveTickable(this);
 		}
+		else if (key == SDLK_F9)
+		{
+			g_application->ReloadScript("songselect", m_lua);
+		}
+		else
+		{
+			lua_getglobal(m_lua, "key_pressed");
+			if (lua_isnil(m_lua, -1))
+			{
+				lua_pop(m_lua, 1);
+			}
+			else
+			{
+				lua_pushinteger(m_lua, key);
+				if (lua_pcall(m_lua, 1, 0, 0) != 0)
+				{
+					Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
+				}
+			}
+		}
 	}
 
 	virtual void OnKeyReleased(int32 key) override
@@ -1590,11 +1612,30 @@ public:
 	virtual void Tick(float deltaTime) override
 	{
 		if (IsSuspended()) return;
+
+		lua_getglobal(m_lua, "update");
+		lua_pushnumber(m_lua, deltaTime);
+		if (lua_pcall(m_lua, 1, 0, 0) != 0)
+		{
+			g_application->RemoveTickable(this);
+
+			Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
+			g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
+		}
 	}
 
 	virtual void Render(float deltaTime) override
 	{
 		if (IsSuspended()) return;
+
+		lua_getglobal(m_lua, "render");
+		if (lua_pcall(m_lua, 0, 0, 0) != 0)
+		{
+			g_application->RemoveTickable(this);
+
+			Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
+			g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
+		}
 	}
 
 	SongSelect_Impl(const SongSelect_Impl&) = delete;
