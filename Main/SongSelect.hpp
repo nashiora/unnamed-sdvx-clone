@@ -6,6 +6,7 @@
 //#define USE_OLD_SONG_SELECT
 
 #if defined(USE_OLD_SONG_SELECT)
+
 struct OLD_SongSelectIndex
 {
 public:
@@ -50,6 +51,40 @@ private:
 	MapIndex * m_map;
 	Vector<DifficultyIndex*> m_diffs;
 };
+
+#else
+
+struct ChartListEntry
+{
+	int32 index;
+
+	ChartListEntry() = default;
+	ChartListEntry(const MapIndex* m, const DifficultyIndex* d)
+		: m_mapIndex(m), m_diffIndex(d)
+	{
+		index = d->id;
+	}
+
+	const MapIndex* GetChartRootDbIndex() const { return m_mapIndex; }
+	const DifficultyIndex* GetChartDbIndex() const { return m_diffIndex; }
+
+private:
+	const MapIndex* m_mapIndex;
+	const DifficultyIndex* m_diffIndex;
+};
+
+struct ChartSet
+{
+	ChartSet() = default;
+	Map<int32, ChartListEntry> entries;
+};
+
+struct ChartGroup
+{
+	ChartGroup() = default;
+	Map<int32, ChartSet> entries;
+};
+
 #endif
 
 /*

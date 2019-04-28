@@ -1528,6 +1528,11 @@ SongSelect* SongSelect::SONGSELECT = nullptr;
 class SongSelect_Impl : public SongSelect
 {
 private:
+	Timer m_dbUpdateTimer;
+	MapDatabase m_mapDatabase;
+
+	Map<String, ChartGroup> m_chartGroups;
+
 	lua_State* m_lua = nullptr;
 
 public:
@@ -1538,16 +1543,79 @@ public:
 			assert(this == SONGSELECT);
 			SONGSELECT = nullptr;
 		}
+
+		m_mapDatabase.OnMapsAdded.RemoveAll(this);
+		m_mapDatabase.OnMapsRemoved.RemoveAll(this);
+		m_mapDatabase.OnMapsUpdated.RemoveAll(this);
+		m_mapDatabase.OnMapsCleared.RemoveAll(this);
+		m_mapDatabase.OnSearchStatusUpdated.RemoveAll(this);
 	}
 
 	SongSelect_Impl()
 	{
 	}
 
+	SongSelect_Impl(const SongSelect_Impl&) = delete;
+	SongSelect_Impl& operator=(const SongSelect_Impl&) = delete;
+
+	SongSelect_Impl(SongSelect_Impl&&) = delete;
+	SongSelect_Impl& operator=(SongSelect_Impl&&) = delete;
+
 	virtual bool Init() override
 	{
 		CheckedLoad(m_lua = g_application->LoadScript("songselect"));
+
+		lua_newtable(m_lua);
+		lua_setglobal(m_lua, "SONGSELECT");
+
+		m_mapDatabase.AddSearchPath(g_gameConfig.GetString(GameConfigKeys::SongFolder));
+
+		m_mapDatabase.OnMapsAdded.Add(this, &SongSelect_Impl::OnMapsAdded);
+		m_mapDatabase.OnMapsRemoved.Add(this, &SongSelect_Impl::OnMapsRemoved);
+		m_mapDatabase.OnMapsUpdated.Add(this, &SongSelect_Impl::OnMapsUpdated);
+		m_mapDatabase.OnMapsCleared.Add(this, &SongSelect_Impl::OnMapsCleared);
+		m_mapDatabase.OnSearchStatusUpdated.Add(this, &SongSelect_Impl::OnSearchStatusUpdated);
+		m_mapDatabase.StartSearching();
+
 		return true;
+	}
+
+	void OnMapsAdded(Vector<MapIndex*> maps)
+	{
+	}
+
+	void OnMapsRemoved(Vector<MapIndex*> maps)
+	{
+	}
+
+	void OnMapsUpdated(Vector<MapIndex*> maps)
+	{
+	}
+
+	void OnMapsCleared(Map<int32, MapIndex*> newList)
+	{
+		m_chartGroups.clear();
+		for (auto p : newList)
+		{
+			const MapIndex* m = p.second;
+			for (auto d : m->difficulties)
+			{
+				ChartGroup& group = m_chartGroups.FindOrAdd("All Songs");
+				ChartSet& set = group.entries.FindOrAdd(m->selectId);
+
+				ChartListEntry entry(m, d);
+				set.entries.Add(entry.index, entry);
+			}
+		}
+
+		if (m_chartGroups.size() > 0)
+		{
+			lua_SetChartList("charts", m_chartGroups);
+		}
+	}
+
+	void OnSearchStatusUpdated(String status)
+	{
 	}
 
 	virtual void OnSuspend() override
@@ -1599,6 +1667,7 @@ public:
 				if (lua_pcall(m_lua, 1, 0, 0) != 0)
 				{
 					Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
+					g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
 				}
 			}
 		}
@@ -1612,6 +1681,12 @@ public:
 	virtual void Tick(float deltaTime) override
 	{
 		if (IsSuspended()) return;
+
+		if (m_dbUpdateTimer.Milliseconds() > 500)
+		{
+			m_mapDatabase.Update();
+			m_dbUpdateTimer.Restart();
+		}
 
 		lua_getglobal(m_lua, "update");
 		lua_pushnumber(m_lua, deltaTime);
@@ -1638,11 +1713,199 @@ public:
 		}
 	}
 
-	SongSelect_Impl(const SongSelect_Impl&) = delete;
-	SongSelect_Impl& operator=(const SongSelect_Impl&) = delete;
+private:
+	void lua_CallChartListChanged()
+	{
+		lua_getglobal(m_lua, "chart_list_changed");
+		if (lua_isnil(m_lua, -1))
+		{
+			lua_pop(m_lua, 1);
+		}
+		else
+		{
+			if (lua_pcall(m_lua, 0, 0, 0) != 0)
+			{
+				Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
+				g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
+			}
+		}
+	}
 
-	SongSelect_Impl(SongSelect_Impl&&) = delete;
-	SongSelect_Impl& operator=(SongSelect_Impl&&) = delete;
+	void lua_SetChartList(const char* key, const Map<String, ChartGroup>& groups)
+	{
+		lua_getglobal(m_lua, "SONGSELECT");
+
+		// create list
+		lua_pushstring(m_lua, key);
+		lua_newtable(m_lua);
+
+		int gi = 1;
+		for (auto& group : groups)
+		{
+			// push array index
+			lua_pushinteger(m_lua, gi++);
+			// new group container
+			lua_newtable(m_lua);
+
+			// group container name
+			m_PushStringToTable("name", group.first.c_str());
+
+			// chart sets
+			lua_pushstring(m_lua, "sets");
+			lua_newtable(m_lua);
+
+			int si = 1;
+			for (auto& set : group.second.entries)
+			{
+				// push array index
+				lua_pushinteger(m_lua, si++);
+				// new set container
+				lua_newtable(m_lua);
+
+				// chart difficulties
+				lua_pushstring(m_lua, "charts");
+				lua_newtable(m_lua);
+
+				int ci = 1;
+				for (auto& chart : set.second.entries)
+				{
+					// push array index
+					lua_pushinteger(m_lua, si++);
+					// new chart container
+					lua_newtable(m_lua);
+
+					const MapIndex* map = chart.second.GetChartRootDbIndex();
+					const DifficultyIndex* diff = chart.second.GetChartDbIndex();
+
+					auto& settings = diff->settings;
+
+					m_PushStringToTable("title", settings.title.c_str());
+					m_PushStringToTable("artist", settings.artist.c_str());
+					m_PushStringToTable("bpm", settings.bpm.c_str());
+
+					m_PushStringToTable("jacketPath", Path::Normalize(map->path + "/" + settings.jacketPath).c_str());
+					m_PushIntToTable("level", settings.level);
+					m_PushIntToTable("difficulty", settings.difficulty);
+					m_PushIntToTable("id", diff->id);
+					m_PushStringToTable("effector", settings.effector.c_str());
+					m_PushStringToTable("illustrator", settings.illustrator.c_str());
+					m_PushIntToTable("topBadge", Scoring::CalculateBestBadge(diff->scores));
+
+					lua_pushstring(m_lua, "scores");
+					lua_newtable(m_lua);
+
+					int scoreIndex = 1;
+					for (auto& score : diff->scores)
+					{
+						// gues what this time
+						lua_pushinteger(m_lua, scoreIndex++);
+						lua_newtable(m_lua);
+
+						m_PushFloatToTable("gauge", score->gauge);
+						m_PushIntToTable("flags", score->gameflags);
+						m_PushIntToTable("score", score->score);
+						m_PushIntToTable("perfects", score->crit);
+						m_PushIntToTable("goods", score->almost);
+						m_PushIntToTable("misses", score->miss);
+						m_PushIntToTable("timestamp", score->timestamp);
+						m_PushIntToTable("badge", Scoring::CalculateBadge(*score));
+
+						// you know the drill
+						lua_settable(m_lua, -3);
+					}
+
+					// set scores baby
+					lua_settable(m_lua, -3);
+					// set chart container to array index in charts
+					lua_settable(m_lua, -3);
+				}
+
+				// set difficulty container to `charts` in set container
+				lua_settable(m_lua, -3);
+				// set set container to array index in group container sets (wtf)
+				lua_settable(m_lua, -3);
+			}
+
+			// set sets to `sets` in group container
+			lua_settable(m_lua, -3);
+			// set group container to array index in list
+			lua_settable(m_lua, -3);
+		}
+
+		// set list to `key` in SONGSELECT
+		lua_settable(m_lua, -3);
+		lua_setglobal(m_lua, "songwheel");
+
+		/*
+		int songIndex = 0;
+		for (auto& song : collection)
+		{
+			lua_pushinteger(m_lua, ++songIndex);
+			lua_newtable(m_lua);
+			m_PushStringToTable("title", song.second.GetDifficulties()[0]->settings.title.c_str());
+			m_PushStringToTable("artist", song.second.GetDifficulties()[0]->settings.artist.c_str());
+			m_PushStringToTable("bpm", song.second.GetDifficulties()[0]->settings.bpm.c_str());
+			m_PushIntToTable("id", song.second.GetMap()->id);
+			m_PushStringToTable("path", song.second.GetMap()->path.c_str());
+			int diffIndex = 0;
+			lua_pushstring(m_lua, "difficulties");
+			lua_newtable(m_lua);
+			for (auto& diff : song.second.GetDifficulties())
+			{
+				lua_pushinteger(m_lua, ++diffIndex);
+				lua_newtable(m_lua);
+				auto settings = diff->settings;
+				m_PushStringToTable("jacketPath", Path::Normalize(song.second.GetMap()->path + "/" + settings.jacketPath).c_str());
+				m_PushIntToTable("level", settings.level);
+				m_PushIntToTable("difficulty", settings.difficulty);
+				m_PushIntToTable("id", diff->id);
+				m_PushStringToTable("effector", settings.effector.c_str());
+				m_PushStringToTable("illustrator", settings.illustrator.c_str());
+				m_PushIntToTable("topBadge", Scoring::CalculateBestBadge(diff->scores));
+				lua_pushstring(m_lua, "scores");
+				lua_newtable(m_lua);
+				int scoreIndex = 0;
+				for (auto& score : diff->scores)
+				{
+					lua_pushinteger(m_lua, ++scoreIndex);
+					lua_newtable(m_lua);
+					m_PushFloatToTable("gauge", score->gauge);
+					m_PushIntToTable("flags", score->gameflags);
+					m_PushIntToTable("score", score->score);
+					m_PushIntToTable("perfects", score->crit);
+					m_PushIntToTable("goods", score->almost);
+					m_PushIntToTable("misses", score->miss);
+					m_PushIntToTable("timestamp", score->timestamp);
+					m_PushIntToTable("badge", Scoring::CalculateBadge(*score));
+					lua_settable(m_lua, -3);
+				}
+				lua_settable(m_lua, -3);
+				lua_settable(m_lua, -3);
+			}
+			lua_settable(m_lua, -3);
+			lua_settable(m_lua, -3);
+		}
+		*/
+	}
+
+	void m_PushStringToTable(const char* name, const char* data)
+	{
+		lua_pushstring(m_lua, name);
+		lua_pushstring(m_lua, data);
+		lua_settable(m_lua, -3);
+	}
+	void m_PushIntToTable(const char* name, int data)
+	{
+		lua_pushstring(m_lua, name);
+		lua_pushinteger(m_lua, data);
+		lua_settable(m_lua, -3);
+	}
+	void m_PushFloatToTable(const char* name, float data)
+	{
+		lua_pushstring(m_lua, name);
+		lua_pushnumber(m_lua, data);
+		lua_settable(m_lua, -3);
+	}
 };
 
 #endif // defined(USE_OLD_SONG_SELECT)
