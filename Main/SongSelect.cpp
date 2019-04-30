@@ -1532,8 +1532,11 @@ private:
 	MapDatabase m_mapDatabase;
 
 	Map<String, ChartGroup> m_chartGroups;
+	String m_lastSearchStatus = "";
 
 	lua_State* m_lua = nullptr;
+
+	std::mutex m_lock;
 
 public:
 	~SongSelect_Impl()
@@ -1610,12 +1613,16 @@ public:
 
 		if (m_chartGroups.size() > 0)
 		{
-			lua_SetChartList("charts", m_chartGroups);
+			lua_SetChartList("chartList", m_chartGroups);
+			lua_CallChartListChanged();
 		}
 	}
 
 	void OnSearchStatusUpdated(String status)
 	{
+		m_lock.lock();
+		m_lastSearchStatus = status;
+		m_lock.unlock();
 	}
 
 	virtual void OnSuspend() override
@@ -1688,6 +1695,14 @@ public:
 			m_dbUpdateTimer.Restart();
 		}
 
+		m_lock.lock();
+		lua_getglobal(m_lua, "SONGSELECT");
+		lua_pushstring(m_lua, "searchStatus");
+		lua_pushstring(m_lua, *m_lastSearchStatus);
+		lua_settable(m_lua, -3);
+		lua_setglobal(m_lua, "SONGSELECT");
+		m_lock.unlock();
+
 		lua_getglobal(m_lua, "update");
 		lua_pushnumber(m_lua, deltaTime);
 		if (lua_pcall(m_lua, 1, 0, 0) != 0)
@@ -1733,7 +1748,8 @@ private:
 
 	void lua_SetChartList(const char* key, const Map<String, ChartGroup>& groups)
 	{
-		lua_getglobal(m_lua, "SONGSELECT");
+		// will be SONGSELECT
+		lua_newtable(m_lua);
 
 		// create list
 		lua_pushstring(m_lua, key);
@@ -1755,6 +1771,7 @@ private:
 			lua_newtable(m_lua);
 
 			int si = 1;
+			//*
 			for (auto& set : group.second.entries)
 			{
 				// push array index
@@ -1770,7 +1787,7 @@ private:
 				for (auto& chart : set.second.entries)
 				{
 					// push array index
-					lua_pushinteger(m_lua, si++);
+					lua_pushinteger(m_lua, ci++);
 					// new chart container
 					lua_newtable(m_lua);
 
@@ -1825,6 +1842,7 @@ private:
 				// set set container to array index in group container sets (wtf)
 				lua_settable(m_lua, -3);
 			}
+			//*/
 
 			// set sets to `sets` in group container
 			lua_settable(m_lua, -3);
@@ -1834,7 +1852,7 @@ private:
 
 		// set list to `key` in SONGSELECT
 		lua_settable(m_lua, -3);
-		lua_setglobal(m_lua, "songwheel");
+		lua_setglobal(m_lua, "SONGSELECT");
 
 		/*
 		int songIndex = 0;

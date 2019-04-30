@@ -68,11 +68,21 @@ local yPosCurHilite = 0
 
 -- Render Functions
 
+local testIndex = 1;
+
 function render()
     gfx.ResetTransform();
 
     gfx_protected_call(render_chart_info, infoPanel.x, infoPanel.y, infoPanel.width, infoPanel.height);
     gfx_protected_call(render_chart_list, chartListPanel.x, chartListPanel.y, chartListPanel.width, chartListPanel.height);
+
+    if SONGSELECT.searchStatus then
+        gfx.BeginPath();
+        gfx.FontSize(fontSizeSmall);
+        gfx.TextAlign(gfx.TEXT_ALIGN_TOP, gfx.TEXT_ALIGN_LEFT);
+        gfx.FillColor(255, 255, 255, 255);
+        gfx.FastText(SONGSELECT.searchStatus, 0, 0);
+    end
 end
 
 function render_chart_info(x, y, width, height)
@@ -116,52 +126,9 @@ function render_chart_list(x, y, width, height)
         local xMargin = 25;
 
         if useGridList then
-            -- How many extra columns would fit the given with?
-            -- that remaining space is divided into column padding.
-            local xPaddingMult  = 1.0;
-            -- What percentage of that horizontal padding applies to the vertical padding?
-            local yPaddingMult  = 0.5;
-            -- How much of the row space is spanned by the column stepping?
-            local ySteppingMult = 0.25;
-            -- How many columns are there? Globally controlled by resolution.
-            local nCols = get_num_songwheel_columns();
-
-            local listIndexAbs = get_abs_index(listIndex, nCols);
-
-            x = x + xMargin;
-            width = width - 2 * xMargin;
-        
-            local tileSize = math.floor(width / (nCols + 0.75));
-            local tileBorder = (width - tileSize * nCols * xPaddingMult) / (nCols - 1);
-        
-            local rowHeight = tileSize + tileBorder * yPaddingMult;
-            local tileOffsetY = (rowHeight * ySteppingMult) / nCols;
-        
-            local nRows = math.ceil((height - tileBorder) / rowHeight);
-            local nRowsAround = math.ceil(nRows / 2);
-            
-            local function posForIndexFromCenterNoCamera(i)
-                local xCol = (i - 1) % nCols;
-                local yRow = math.floor((i - 1) / nCols);
-
-                local xPos = xCol * (tileBorder + tileSize);
-                local yPos = yRow * rowHeight + tileOffsetY * xCol;
-
-                return xPos, yPos;
-            end
-            
-            local xPosCur, yPosCur = posForIndexFromCenterNoCamera(listIndexAbs);
-
-            local yPosWheelTarget = yPosSel;
-            yPosWheel = lerp(yPosWheel, yPosWheelTarget, 0.1);
-
-            local curRow = math.floor((listIndexAbs - 1) / nCols);
-            local minIndex = math.floor(curRow - nRowsAround) * nCols + 1;
-            local maxIndex = math.ceil(curRow + nRowsAround + 1) * nCols;
-        
-            local xCurCol = (listIndexAbs - 1) % nCols;
+            -- grid view
         else
-            -- non-grid, wheel
+            -- wheel view
         end
     end
 end
@@ -204,5 +171,4 @@ function key_released(key)
 end
 
 function chart_list_changed()
-    printf("This is a test!");
 end
