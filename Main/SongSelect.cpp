@@ -1661,17 +1661,21 @@ public:
 		{
 			g_application->ReloadScript("songselect", m_lua);
 		}
-		else
+		else if (key == SDLK_UP || key == SDLK_DOWN || key == SDLK_PAGEUP || key == SDLK_PAGEDOWN)
 		{
-			lua_getglobal(m_lua, "key_pressed");
+			lua_getglobal(m_lua, "menu_navigate");
 			if (lua_isnil(m_lua, -1))
 			{
 				lua_pop(m_lua, 1);
 			}
 			else
 			{
-				lua_pushinteger(m_lua, key);
-				if (lua_pcall(m_lua, 1, 0, 0) != 0)
+				int dir = (key == SDLK_UP || key == SDLK_PAGEUP) ? -1 : 1;
+				bool byPage = key == SDLK_PAGEUP || key == SDLK_PAGEDOWN;
+
+				lua_pushinteger(m_lua, dir);
+				lua_pushboolean(m_lua, byPage);
+				if (lua_pcall(m_lua, 2, 0, 0) != 0)
 				{
 					Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
 					g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
@@ -1853,57 +1857,6 @@ private:
 		// set list to `key` in SONGSELECT
 		lua_settable(m_lua, -3);
 		lua_setglobal(m_lua, "SONGSELECT");
-
-		/*
-		int songIndex = 0;
-		for (auto& song : collection)
-		{
-			lua_pushinteger(m_lua, ++songIndex);
-			lua_newtable(m_lua);
-			m_PushStringToTable("title", song.second.GetDifficulties()[0]->settings.title.c_str());
-			m_PushStringToTable("artist", song.second.GetDifficulties()[0]->settings.artist.c_str());
-			m_PushStringToTable("bpm", song.second.GetDifficulties()[0]->settings.bpm.c_str());
-			m_PushIntToTable("id", song.second.GetMap()->id);
-			m_PushStringToTable("path", song.second.GetMap()->path.c_str());
-			int diffIndex = 0;
-			lua_pushstring(m_lua, "difficulties");
-			lua_newtable(m_lua);
-			for (auto& diff : song.second.GetDifficulties())
-			{
-				lua_pushinteger(m_lua, ++diffIndex);
-				lua_newtable(m_lua);
-				auto settings = diff->settings;
-				m_PushStringToTable("jacketPath", Path::Normalize(song.second.GetMap()->path + "/" + settings.jacketPath).c_str());
-				m_PushIntToTable("level", settings.level);
-				m_PushIntToTable("difficulty", settings.difficulty);
-				m_PushIntToTable("id", diff->id);
-				m_PushStringToTable("effector", settings.effector.c_str());
-				m_PushStringToTable("illustrator", settings.illustrator.c_str());
-				m_PushIntToTable("topBadge", Scoring::CalculateBestBadge(diff->scores));
-				lua_pushstring(m_lua, "scores");
-				lua_newtable(m_lua);
-				int scoreIndex = 0;
-				for (auto& score : diff->scores)
-				{
-					lua_pushinteger(m_lua, ++scoreIndex);
-					lua_newtable(m_lua);
-					m_PushFloatToTable("gauge", score->gauge);
-					m_PushIntToTable("flags", score->gameflags);
-					m_PushIntToTable("score", score->score);
-					m_PushIntToTable("perfects", score->crit);
-					m_PushIntToTable("goods", score->almost);
-					m_PushIntToTable("misses", score->miss);
-					m_PushIntToTable("timestamp", score->timestamp);
-					m_PushIntToTable("badge", Scoring::CalculateBadge(*score));
-					lua_settable(m_lua, -3);
-				}
-				lua_settable(m_lua, -3);
-				lua_settable(m_lua, -3);
-			}
-			lua_settable(m_lua, -3);
-			lua_settable(m_lua, -3);
-		}
-		*/
 	}
 
 	void m_PushStringToTable(const char* name, const char* data)

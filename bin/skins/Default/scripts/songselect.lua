@@ -1,3 +1,19 @@
+local function print(...)
+	local result = "";
+	for _, v in next, { ... } do
+		result = result .. " " .. tostring(v);
+	end
+	game.Log(result, game.LOGGER_NORMAL);
+end
+
+-- Configuration Stuff, all in one place
+
+local CONFIG = {
+	UseGridList = false,
+};
+
+-- Graphics Additions
+
 gfx.LoadSkinFont("segoeui.ttf");
 
 function gfx_protected_call(f, ...)
@@ -5,10 +21,6 @@ function gfx_protected_call(f, ...)
     f(...);
     gfx.Restore();
 end
-
--- Configurable Settings
-
-local useGridList = false;
 
 -- Responsive Layout
 
@@ -59,12 +71,17 @@ local totalTime = 0;
 
 -- Miscelaneous
 
-local chartList = { };
-local listIndex = 0;
+game.LoadSkinSample("menu_click")
 
-local yPosWheel = 0
-local xPosCurHilite = 0
-local yPosCurHilite = 0
+local chartList = { };
+
+local groupIndex = 1;
+local setIndex = 1;
+local chartIndex = 1;
+
+local yPosWheel = 0;
+local xPosCurHilite = 0;
+local yPosCurHilite = 0;
 
 -- Render Functions
 
@@ -94,7 +111,7 @@ end
 
 function render_chart_list(x, y, width, height)
     gfx.BeginPath();
-    gfx.Rect(x + 20, y + 20, width - 40, height - 40);
+    gfx.Rect(x, y, width, height);
     gfx.FillColor(20, 20, 20, 255);
     gfx.Fill();
 
@@ -102,33 +119,52 @@ function render_chart_list(x, y, width, height)
         return;
     end
 
-    -- for the grid view
-    local function get_abs_index(i, nCols)
-        local listIndexAbs = -1;
-        local listIndexAccum = 0;
-        for gi = 1, #chartList do
-            local cGroup = chartList[gi];
-
-            if i <= listIndexAccum + #cGroup then
-                listIndexAbs = listIndexAbs + i - listIndexAccum;
-            else
-                listIndexAccum = listIndexAccum + #cGroup;
-                listIndexAbs = listIndexAbs + math.ceil(#cGroup / nCols) * nCols;
-            end
-        end
-        return listIndexAbs;
-    end
-
     if layout == "Landscape" then
         local groupHeaderHeight = screenHeight / 20;
 
         -- Left and right margin applied to the width.
         local xMargin = 25;
+		
+		local groupInfos = { };
+        if CONFIG.UseGridList then
+			for gi = 1, #chartList do
+			end
 
-        if useGridList then
-            -- grid view
-        else
-            -- wheel view
+			local function handle_group(groupIndex)
+			end
+        else -- wheel view
+			local numVisibleEntries = 10;
+			local entryHeight = height / numVisibleEntries;
+
+			for gi = 1, #chartList do
+				groupInfos[gi] = {
+					TotalHeight = (1 + #chartList[gi].sets) * entryHeight,
+				};
+			end
+
+			local function handle_group(groupIndex)
+				gfx.BeginPath();
+				gfx.Rect(x, y, width, entryHeight);
+				gfx.FillColor(80, 80, 150, 255);
+				gfx.Fill();
+
+				for si = 1, #chartList[groupIndex].sets do
+					local yPos = si * entryHeight;
+					
+					gfx.BeginPath();
+					gfx.Rect(x + width * 0.1, y + yPos + entryHeight * 0.05, width * 0.8, entryHeight * 0.9);
+					if si == setIndex then
+						gfx.FillColor(255, 255, 255, 255);
+					else
+						gfx.FillColor(200, 200, 255, 255);
+					end
+					gfx.Fill();
+				end
+			end
+
+			local primaryGroup = 1;
+
+			handle_group(primaryGroup);
         end
     end
 end
@@ -164,11 +200,43 @@ function update(deltaTime)
     end
 end
 
-function key_pressed(key)
+function menu_navigate(direction, byPage)
+	print(direction, byPage);
+	if direction < 0 then -- up
+		game.PlaySample("menu_click");
+		if setIndex > 1 then
+			setIndex = setIndex - 1;
+		else
+			if groupIndex > 1 then
+				groupIndex = groupIndex - 1;
+			else
+				groupIndex = #chartList;
+			end
+			setIndex = #chartList[groupIndex].sets;
+		end
+	else -- down
+		game.PlaySample("menu_click");
+		if setIndex < #chartList[groupIndex].sets then
+			setIndex = setIndex + 1;
+		else
+			if groupIndex < #chartList then
+				groupIndex = groupIndex + 1;
+			else
+				groupIndex = 1;
+			end
+			setIndex = 1;
+		end
+	end
+
+	print("[", groupIndex .. ", " .. setIndex .. ", " .. chartIndex, "]");
 end
 
-function key_released(key)
+function button_pressed(button)
+end
+
+function button_released(button)
 end
 
 function chart_list_changed()
+	chartList = SONGSELECT.chartList;
 end
