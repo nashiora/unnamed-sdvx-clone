@@ -138,21 +138,22 @@ function render_chart_list(x, y, width, height)
 
 			for gi = 1, #chartList do
 				groupInfos[gi] = {
-					TotalHeight = (1 + #chartList[gi].sets) * entryHeight,
+					TotalHeight = (0.5 + #chartList[gi].sets) * entryHeight,
 				};
 			end
 
 			local function handle_group(groupIndex)
 				gfx.BeginPath();
-				gfx.Rect(x, y, width, entryHeight);
+				gfx.Rect(x + width / 2, y, width / 2, entryHeight * 0.5);
 				gfx.FillColor(80, 80, 150, 255);
 				gfx.Fill();
 
 				for si = 1, #chartList[groupIndex].sets do
-					local yPos = si * entryHeight;
+					local yPos = (si - 0.5) * entryHeight + entryHeight * 0.5;
+					local xPos = (1 - yPos / height) * width / 2;
 					
 					gfx.BeginPath();
-					gfx.Rect(x + width * 0.1, y + yPos + entryHeight * 0.05, width * 0.8, entryHeight * 0.9);
+					gfx.Rect(x + xPos, y + yPos - entryHeight * 0.5 + entryHeight * 0.05, width * 0.8, entryHeight * 0.9);
 					if si == setIndex then
 						gfx.FillColor(255, 255, 255, 255);
 					else
@@ -180,7 +181,7 @@ function update(deltaTime)
     if layout == "Landscape" then
         infoPanel.x = 0;
         infoPanel.y = 0;
-        infoPanel.width = screenHeight * 0.5;
+        infoPanel.width = screenHeight * 0.75;
         infoPanel.height = screenHeight;
         
         chartListPanel.x = infoPanel.width;
