@@ -388,7 +388,7 @@ public:
 				Logf("Lua error: %s", Logger::Error, lua_tostring(m_lua, -1));
 				g_gameWindow->ShowMessageBox("Lua Error", lua_tostring(m_lua, -1), 0);
 			}
-			int ret = luaL_checkinteger(m_lua, 0);
+			int ret = luaL_checkinteger(m_lua, -1);
 			lua_settop(m_lua, 0);
 			AdvanceSelection(ret * direction);
 		}
@@ -1088,7 +1088,7 @@ public:
 		if (map == m_currentPreviewAudio){
 			if (m_previewDelayTicks){
 				--m_previewDelayTicks;
-			}else if (!m_previewLoaded){
+			}else if (!m_previewLoaded && !m_currentPreviewAudio->difficulties.empty()){
 				// Set current preview audio
 				DifficultyIndex* previewDiff = m_currentPreviewAudio->difficulties[0];
 				String audioPath = m_currentPreviewAudio->path + Path::sep + previewDiff->settings.audioNoFX;
@@ -1513,8 +1513,7 @@ public:
 		if (g_gameConfig.GetBool(GameConfigKeys::AutoResetSettings))
 		{
 			m_settingsWheel->ClearSettings();
-			g_gameConfig.Set(GameConfigKeys::UseCMod, false);
-			g_gameConfig.Set(GameConfigKeys::UseMMod, true);
+			g_gameConfig.SetEnum<Enum_SpeedMods>(GameConfigKeys::SpeedMod, SpeedMods::XMod);
 			g_gameConfig.Set(GameConfigKeys::ModSpeed, g_gameConfig.GetFloat(GameConfigKeys::AutoResetToSpeed));
 			m_filterSelection->SetFiltersByIndex(0, 0);
 		}

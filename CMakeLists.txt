@@ -34,8 +34,8 @@ add_definitions(-DUNICODE -D_UNICODE)
 #	pchSrc 	= Path to precompiled header source file
 macro(enable_precompiled_headers src pchSrc)
 	if(MSVC)
-		message("Enabling precompiled header generated from source file ${pchSrc}")
-		message("Files using precompiled headers => ${src}")
+		#message("Enabling precompiled header generated from source file ${pchSrc}")
+		#message("Files using precompiled headers => ${src}")
 		# Set precompiled header usage
 		set_source_files_properties(${src} PROPERTIES COMPILE_FLAGS "/Yu")
 		# Set precompiled header
@@ -93,7 +93,6 @@ if(MSVC)
 	set_target_properties(freetype PROPERTIES FOLDER "Third Party")
 	set_target_properties(SDL2 PROPERTIES FOLDER "Third Party")
 	set_target_properties(cpr PROPERTIES FOLDER "Third Party")
-	set_target_properties(jansson PROPERTIES FOLDER "Third Party")
 	set_target_properties(libcurl PROPERTIES FOLDER "Third Party/external")
     set_target_properties(nanovg PROPERTIES FOLDER "Third Party")
     #set_target_properties(nuklear PROPERTIES FOLDER "Third Party")
