@@ -23,13 +23,6 @@ option(BUILD_EXAMPLES "Build example apps" OFF)
 add_subdirectory(discord-rpc)
 target_include_directories(discord-rpc PUBLIC discord-rpc/include)
 
-#jansson
-option(JANSSON_BUILD_DOCS "" OFF)
-option(JANSSON_EXAMPLES "" OFF)
-option(JANSSON_WITHOUT_TESTS "" ON)
-add_subdirectory(jansson)
-target_include_directories(cpr PUBLIC jansson/include)
-
 if(WIN32)
 	# Use bundled third party libraries on windows
 	add_subdirectory(freetype)
@@ -58,3 +51,8 @@ add_definitions(-DFONS_USE_FREETYPE)
 
 #miniaudio
 set_property(GLOBAL PROPERTY MA_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/miniaudio)
+
+#json for modern c++
+set_property(GLOBAL PROPERTY NLOHMANN_JSON_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/nlohmann_json)
+
+

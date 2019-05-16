@@ -11,6 +11,8 @@ extern Vector2i g_resolution;
 extern class Application* g_application;
 extern class JobSheduler* g_jobSheduler;
 extern class Input g_input;
+extern class SkinConfig* g_skinConfig;
+
 
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 3
@@ -120,6 +122,7 @@ private:
 	float m_deltaTime;
 	bool m_allowMapConversion;
 	bool m_hasUpdate = false;
+	bool m_showFps = false;
 	String m_updateUrl;
 	String m_updateVersion;
 	String m_currentVersion;
