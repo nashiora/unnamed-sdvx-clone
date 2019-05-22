@@ -337,7 +337,7 @@ nanovg.h:420_
 .. _nanovg.h:420: https://github.com/memononen/nanovg/blob/master/src/nanovg.h#L420
 
 UpdateImagePattern(int paint, float ox, float oy, float ex, float ey, float angle, float alpha)
-**********************************************************************************************
+***********************************************************************************************
 Updates the parameters of an already existing ImagePattern.
 
 
@@ -407,6 +407,10 @@ Example:
     end
     
     
+LoadWebImageJob(char* url, int placeholder, int w = 0, int h = 0)
+*****************************************************************
+Works the same as ``LoadImageJob`` but the path is a web url instead.
+   
 Scissor(float x, float y, float w, float h)
 ****************************************************************
 nanovg.h:431_

@@ -69,6 +69,7 @@ public:
 		effectTypes["LPF"] = EffectType::LowPassFilter;
 		effectTypes["HPF"] = EffectType::HighPassFilter;
 		effectTypes["PEAK"] = EffectType::PeakingFilter;
+		effectTypes["SwitchAudio"] = EffectType::SwitchAudio;
 	}
 
 	// Only checks if a mapping exists and returns this, or None
@@ -181,6 +182,13 @@ static MultiParam ParseParam(const String& in)
 		ret.type = MultiParam::Samples;
 		sscanf(*in, "%i", &ret.ival);
 	}
+	else if (in.find("%") != -1)
+	{
+		ret.type = MultiParam::Float;
+		int percentage = 0;
+		sscanf(*in, "%i", &percentage);
+		ret.fval = percentage / 100.0;
+	}
 	else
 	{
 		ret.type = MultiParam::Int;
@@ -188,7 +196,7 @@ static MultiParam ParseParam(const String& in)
 	}
 	return ret;
 }
-AudioEffect ParseCustomEffect(const KShootEffectDefinition& def)
+AudioEffect ParseCustomEffect(const KShootEffectDefinition& def, Vector<String> &switchablePaths)
 {
 	static EffectTypeMap defaultEffects;
 	AudioEffect effect;
@@ -212,24 +220,52 @@ AudioEffect ParseCustomEffect(const KShootEffectDefinition& def)
 		}
 		else
 		{
-			size_t split = s.second.find('-', 1);
+			// Special case for SwitchAudio effect
+			if (s.first == "fileName") {
+				MultiParam switchableIndex;
+				switchableIndex.type = MultiParam::Int;
+
+				auto it = std::find(switchablePaths.begin(), switchablePaths.end(), s.second);
+				if (it == switchablePaths.end())
+				{
+					switchableIndex.ival = switchablePaths.size();
+					switchablePaths.Add(s.second);
+				}
+				else
+				{
+					switchableIndex.ival = std::distance(switchablePaths.begin(), it);
+				}
+
+				params.Add("index", switchableIndex);
+				continue;
+			}
+
+			size_t splitArrow = s.second.find('>', 1);
+			String param;
+			if (splitArrow != -1)
+			{
+				param = s.second.substr(splitArrow + 1);
+			} else {
+				param = s.second;
+			}
+			size_t split = param.find('-', 1);
 			if (split != -1)
 			{
 				String a, b;
-				a = s.second.substr(0, split);
-				b = s.second.substr(split + 1);
+				a = param.substr(0, split);
+				b = param.substr(split + 1);
 
 				MultiParamRange pr = { ParseParam(a), ParseParam(b) };
 				if (pr.params[0].type != pr.params[1].type)
 				{
-					Logf("Non matching parameters types \"[%s, %s]\" for key: %s", Logger::Warning, s.first, s.second, s.first);
+					Logf("Non matching parameters types \"[%s, %s]\" for key: %s", Logger::Warning, s.first, param, s.first);
 					continue;
 				}
 				params.Add(s.first, pr);
 			}
 			else
 			{
-				params.Add(s.first, ParseParam(s.second));
+				params.Add(s.first, ParseParam(param));
 			}
 		}
 	}
@@ -260,6 +296,14 @@ AudioEffect ParseCustomEffect(const KShootEffectDefinition& def)
 	{
 		auto* param = params.Find(name);
 		if (param && param->params[0].type == MultiParam::Samples)
+		{
+			target = param->ToSamplesParam();
+		}
+	};
+	auto AssignIntIfSet = [&](EffectParam<int32> & target, const String & name)
+	{
+		auto* param = params.Find(name);
+		if (param)
 		{
 			target = param->ToSamplesParam();
 		}
@@ -302,6 +346,9 @@ AudioEffect ParseCustomEffect(const KShootEffectDefinition& def)
 	case EffectType::TapeStop:
 		AssignDurationIfSet(effect.duration, "speed");
 		break;
+	case EffectType::SwitchAudio:
+		AssignIntIfSet(effect.switchaudio.index, "index");
+		break;
 	}
 
 	return effect;
@@ -335,14 +382,14 @@ bool Beatmap::m_ProcessKShootMap(BinaryStream& input, bool metadataOnly)
 		EffectType type = effectTypeMap.FindOrAddEffectType(it->first);
 		if (m_customEffects.Contains(type))
 			continue;
-		m_customEffects.Add(type, ParseCustomEffect(it->second));
+		m_customEffects.Add(type, ParseCustomEffect(it->second, m_switchablePaths));
 	}
 	for (auto it = kshootMap.filterDefines.begin(); it != kshootMap.filterDefines.end(); it++)
 	{
 		EffectType type = filterTypeMap.FindOrAddEffectType(it->first);
 		if (m_customFilters.Contains(type))
 			continue;
-		m_customFilters.Add(type, ParseCustomEffect(it->second));
+		m_customFilters.Add(type, ParseCustomEffect(it->second, m_switchablePaths));
 	}
 
 	auto ParseFilterType = [&](const String& str)
